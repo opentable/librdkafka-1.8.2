@@ -4384,16 +4384,10 @@ int rd_kafka_produce(rd_kafka_topic_t *rkt, int32_t partition,
 
 RD_EXPORT
 rd_kafka_resp_err_t rd_kafka_producev(rd_kafka_t *rk,
-                                      rd_kafka_vtype_t ProduceVarTag_Topic,
-                                      const char *topic,
-                                      rd_kafka_vtype_t ProduceVarTag_Partition,
-                                      int32_t partition,
-                                      rd_kafka_vtype_t ProduceVarTag_Value,
-                                      void *payload,
-                                      size_t payload_len,
-                                      rd_kafka_vtype_t ProduceVarTag_Key,
-                                      void *key,
-                                      size_t key_len,
+                                      rd_kafka_vtype_t topicType,      const char *topic,
+                                      rd_kafka_vtype_t partitionType,  int32_t partition,
+                                      rd_kafka_vtype_t vaType,         void *payload, size_t payload_len,
+                                      rd_kafka_vtype_t keyType,        void *key,     size_t key_len,
                                       ...);
 
 RD_EXPORT

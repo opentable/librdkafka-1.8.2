@@ -535,16 +535,10 @@ rd_kafka_error_t *rd_kafka_produceva (rd_kafka_t *rk,
 }
 
 rd_kafka_resp_err_t rd_kafka_producev(rd_kafka_t *rk,
-                                      rd_kafka_vtype_t ProduceVarTag_Topic,
-                                      const char *topic,
-                                      rd_kafka_vtype_t ProduceVarTag_Partition,
-                                      int32_t partition,
-                                      rd_kafka_vtype_t ProduceVarTag_Value,
-                                      void *payload,
-                                      size_t payload_len,
-                                      rd_kafka_vtype_t ProduceVarTag_Key,
-                                      void *key,
-                                      size_t key_len,
+                                      rd_kafka_vtype_t topicType,      const char *topic,
+                                      rd_kafka_vtype_t partitionType,  int32_t partition,
+                                      rd_kafka_vtype_t vaType,         void *payload, size_t payload_len,
+                                      rd_kafka_vtype_t keyType,        void *key,     size_t key_len,
                                       ...)
 {
         va_list ap;
@@ -570,7 +564,7 @@ rd_kafka_resp_err_t rd_kafka_producev(rd_kafka_t *rk,
         rkm->rkm_payload = payload;
         rkm->rkm_len = payload_len; 
         rkm->rkm_key = key;
-        rkm->rkm_key_len = key_len;                         
+        rkm->rkm_key_len = key_len;
 
         va_start(ap, key_len);
         while (!err &&
@@ -654,7 +648,7 @@ rd_kafka_resp_err_t rd_kafka_producev(rd_kafka_t *rk,
                 }
         }
 
-        va_end(ap);
+        va_end(ap);                       
 
         if (unlikely(!rkt))
                 return RD_KAFKA_RESP_ERR__INVALID_ARG;
