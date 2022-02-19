@@ -544,7 +544,7 @@ static void process_message (rd_kafka_t *consumer,
 
         /* Emit output message on transactional producer */
         while (1) {
-                err = rd_kafka_producev(
+                err = rd_kafka_producevx(
                         producer,
                         RD_KAFKA_V_TOPIC(output_topic),
                         /* Use same key as input message */

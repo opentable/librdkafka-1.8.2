@@ -625,7 +625,7 @@ int main (int argc, char **argv) {
 
                                 hdrs_copy = rd_kafka_headers_copy(hdrs);
 
-                                err = rd_kafka_producev(
+                                err = rd_kafka_producevx(
                                         rk,
                                         RD_KAFKA_V_RKT(rkt),
                                         RD_KAFKA_V_PARTITION(partition),

@@ -156,7 +156,7 @@ RdKafka::ProducerImpl::produce (const std::string topic_name,
   return
   static_cast<RdKafka::ErrorCode>
     (
-      rd_kafka_producev(rk_,
+      rd_kafka_producevx(rk_,
                         RD_KAFKA_V_TOPIC(topic_name.c_str()),
                         RD_KAFKA_V_PARTITION(partition),
                         RD_KAFKA_V_MSGFLAGS(msgflags),
@@ -185,7 +185,7 @@ RdKafka::ProducerImpl::produce (const std::string topic_name,
     hdrs = headersimpl->c_ptr();
   }
 
-  err = rd_kafka_producev(rk_,
+  err = rd_kafka_producevx(rk_,
                           RD_KAFKA_V_TOPIC(topic_name.c_str()),
                           RD_KAFKA_V_PARTITION(partition),
                           RD_KAFKA_V_MSGFLAGS(msgflags),

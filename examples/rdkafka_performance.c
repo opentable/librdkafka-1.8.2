@@ -770,7 +770,7 @@ static rd_kafka_resp_err_t do_produce (rd_kafka_t *rk,
 
                 hdrs_copy = rd_kafka_headers_copy(hdrs);
 
-                err = rd_kafka_producev(
+                err = rd_kafka_producevx(
                         rk,
                         RD_KAFKA_V_RKT(rkt),
                         RD_KAFKA_V_PARTITION(partition),

@@ -534,10 +534,185 @@ rd_kafka_error_t *rd_kafka_produceva (rd_kafka_t *rk,
         return error;
 }
 
+rd_kafka_resp_err_t rd_kafka_producev(rd_kafka_t *rk,
+                                      rd_kafka_vtype_t ProduceVarTag_Topic,
+                                      const char *topic,
+                                      rd_kafka_vtype_t ProduceVarTag_Partition,
+                                      int32_t partition,
+                                      rd_kafka_vtype_t ProduceVarTag_Value,
+                                      void *payload,
+                                      size_t payload_len,
+                                      rd_kafka_vtype_t ProduceVarTag_Key,
+                                      void *key,
+                                      size_t key_len,
+                                      ...)
+{
+        va_list ap;
+        rd_kafka_msg_t s_rkm = {
+            /* Message defaults */
+            .rkm_partition = RD_KAFKA_PARTITION_UA,
+            .rkm_timestamp = 0, /* current time */
+        };
+        rd_kafka_msg_t *rkm = &s_rkm;
+        rd_kafka_vtype_t vtype;
+        rd_kafka_topic_t *rkt = NULL;
+        rd_kafka_resp_err_t err;
+        rd_kafka_headers_t *hdrs = NULL;
+        rd_kafka_headers_t *app_hdrs = NULL; /* App-provided headers list */
 
+        if (unlikely((err = rd_kafka_check_produce(rk, NULL))))
+                return err;
+
+        rkt = rd_kafka_topic_new0(rk,
+                                  topic,
+                                  NULL, NULL, 1);
+        rkm->rkm_partition = partition;
+        rkm->rkm_payload = payload;
+        rkm->rkm_len = payload_len; 
+        rkm->rkm_key = key;
+        rkm->rkm_key_len = key_len;                         
+
+        va_start(ap, key_len);
+        while (!err &&
+               (vtype = va_arg(ap, rd_kafka_vtype_t)) != RD_KAFKA_VTYPE_END)
+        {
+                switch (vtype)
+                {
+                case RD_KAFKA_VTYPE_TOPIC:
+                        rkt = rd_kafka_topic_new0(rk,
+                                                  va_arg(ap, const char *),
+                                                  NULL, NULL, 1);
+                        break;
+
+                case RD_KAFKA_VTYPE_RKT:
+                        rkt = rd_kafka_topic_proper(
+                            va_arg(ap, rd_kafka_topic_t *));
+                        rd_kafka_topic_keep(rkt);
+                        break;
+
+                case RD_KAFKA_VTYPE_PARTITION:
+                        rkm->rkm_partition = va_arg(ap, int32_t);
+                        break;
+
+                case RD_KAFKA_VTYPE_VALUE:
+                        rkm->rkm_payload = va_arg(ap, void *);
+                        rkm->rkm_len = va_arg(ap, size_t);
+                        break;
+
+                case RD_KAFKA_VTYPE_KEY:
+                        rkm->rkm_key = va_arg(ap, void *);
+                        rkm->rkm_key_len = va_arg(ap, size_t);
+                        break;
+
+                case RD_KAFKA_VTYPE_OPAQUE:
+                        rkm->rkm_opaque = va_arg(ap, void *);
+                        break;
+
+                case RD_KAFKA_VTYPE_MSGFLAGS:
+                        rkm->rkm_flags = va_arg(ap, int);
+                        break;
+
+                case RD_KAFKA_VTYPE_TIMESTAMP:
+                        rkm->rkm_timestamp = va_arg(ap, int64_t);
+                        break;
+
+                case RD_KAFKA_VTYPE_HEADER:
+                {
+                        const char *name;
+                        const void *value;
+                        ssize_t size;
+
+                        if (unlikely(app_hdrs != NULL))
+                        {
+                                err = RD_KAFKA_RESP_ERR__CONFLICT;
+                                break;
+                        }
+
+                        if (unlikely(!hdrs))
+                                hdrs = rd_kafka_headers_new(8);
+
+                        name = va_arg(ap, const char *);
+                        value = va_arg(ap, const void *);
+                        size = va_arg(ap, ssize_t);
+
+                        err = rd_kafka_header_add(hdrs, name, -1, value, size);
+                }
+                break;
+
+                case RD_KAFKA_VTYPE_HEADERS:
+                        if (unlikely(hdrs != NULL))
+                        {
+                                err = RD_KAFKA_RESP_ERR__CONFLICT;
+                                break;
+                        }
+                        app_hdrs = va_arg(ap, rd_kafka_headers_t *);
+                        break;
+
+                default:
+                        err = RD_KAFKA_RESP_ERR__INVALID_ARG;
+                        break;
+                }
+        }
+
+        va_end(ap);
+
+        if (unlikely(!rkt))
+                return RD_KAFKA_RESP_ERR__INVALID_ARG;
+
+        if (likely(!err))
+                rkm = rd_kafka_msg_new0(rkt,
+                                        rkm->rkm_partition,
+                                        rkm->rkm_flags,
+                                        rkm->rkm_payload, rkm->rkm_len,
+                                        rkm->rkm_key, rkm->rkm_key_len,
+                                        rkm->rkm_opaque,
+                                        &err, NULL,
+                                        app_hdrs ? app_hdrs : hdrs,
+                                        rkm->rkm_timestamp,
+                                        rd_clock());
+
+        if (unlikely(err))
+        {
+                rd_kafka_topic_destroy0(rkt);
+                if (hdrs)
+                        rd_kafka_headers_destroy(hdrs);
+                return err;
+        }
+
+        /* Partition the message */
+        err = rd_kafka_msg_partitioner(rkt, rkm, 1);
+        if (unlikely(err))
+        {
+                /* Handle partitioner failures: it only fails when
+                 * the application attempts to force a destination
+                 * partition that does not exist in the cluster. */
+
+                /* Interceptors: Unroll on_send by on_ack.. */
+                rkm->rkm_err = err;
+                rd_kafka_interceptors_on_acknowledgement(rk,
+                                                         &rkm->rkm_rkmessage);
+
+                /* Note we must clear the RD_KAFKA_MSG_F_FREE
+                 * flag since our contract says we don't free the payload on
+                 * failure. */
+                rkm->rkm_flags &= ~RD_KAFKA_MSG_F_FREE;
+
+                /* Deassociate application owned headers from message
+                 * since headers remain in application ownership
+                 * when producev() fails */
+                if (app_hdrs && app_hdrs == rkm->rkm_headers)
+                        rkm->rkm_headers = NULL;
+
+                rd_kafka_msg_destroy(rk, rkm);
+        }
+
+        rd_kafka_topic_destroy0(rkt);
+
+        return err;
+}
 
 /** @remark Keep rd_kafka_produceva() and rd_kafka_producev() in synch */
-rd_kafka_resp_err_t rd_kafka_producev (rd_kafka_t *rk, ...) {
+rd_kafka_resp_err_t rd_kafka_producevx (rd_kafka_t *rk, ...) {
         va_list ap;
         rd_kafka_msg_t s_rkm = {
                 /* Message defaults */

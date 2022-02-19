@@ -169,7 +169,7 @@ int main (int argc, char **argv) {
                  * when the message has been delivered (or failed).
                  */
         retry:
-                err = rd_kafka_producev(
+                err = rd_kafka_producevx(
                         /* Producer handle */
                         rk,
                         /* Topic name */

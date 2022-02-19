@@ -251,7 +251,7 @@ int main (int argc, char **argv) {
                  * rd_kafka_poll() or rd_kafka_flush().
                  */
         retry:
-                err = rd_kafka_producev(
+                err = rd_kafka_producevx(
                         rk,
                         RD_KAFKA_V_TOPIC(topic),
                         RD_KAFKA_V_VALUE(buf, strlen(buf)),
