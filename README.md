@@ -1,3 +1,22 @@
+WARNING: This is patched version of the **librdkafka** for Apple M1 selicon
+===========================================================================
+
+# Description
+The macOS ARM64 has different method of passing parameters to the Variadic Functions. .NET have open ticket https://github.com/dotnet/runtime/issues/48796 to solve it properly. In a meaan time we can use this patch to use `Confluent.Kafks` package on M1.
+
+
+# Installation
+```
+git clone git@github.com:opentable/librdkafka-1.8.2.git
+cd librdkafka-1.8.2
+./configure --install-deps
+brew install  openssl zstd pkg-config
+./configure
+make
+sudo make install
+```
+
+
 librdkafka - the Apache Kafka C/C++ client library
 ==================================================
 
