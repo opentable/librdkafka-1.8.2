@@ -2,7 +2,7 @@ WARNING: This is patched version of the **librdkafka** for Apple M1 selicon
 ===========================================================================
 
 # Description
-The macOS ARM64 has different method of passing parameters to the Variadic Functions. .NET have open ticket https://github.com/dotnet/runtime/issues/48796 to solve it properly. In a meaan time we can use this patch to use `Confluent.Kafks` package on M1.
+The macOS ARM64 has different method of passing parameters to the Variadic Functions. .NET have open ticket https://github.com/dotnet/runtime/issues/48796 to solve it properly. In a meaan time we can use this patch to use `Confluent.Kafks` package on M1. Apple notes: https://developer.apple.com/documentation/apple-silicon/addressing-architectural-differences-in-your-macos-code
 
 
 # Installation
