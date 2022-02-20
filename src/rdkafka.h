@@ -4388,7 +4388,11 @@ rd_kafka_resp_err_t rd_kafka_producev(rd_kafka_t *rk,
                                       rd_kafka_vtype_t partitionType,  int32_t partition,
                                       rd_kafka_vtype_t vaType,         void *payload, size_t payload_len,
                                       rd_kafka_vtype_t keyType,        void *key,     size_t key_len,
-                                      ...);
+                                      rd_kafka_vtype_t msg_opaqueType, void *opaque,
+                                      rd_kafka_vtype_t msgflagsType,   int64_t flags,
+                                      rd_kafka_vtype_t timestampType,  int64_t timestamp,
+                                      rd_kafka_vtype_t headersType,    rd_kafka_headers_t *headers,
+                                      rd_kafka_vtype_t endType);
 
 RD_EXPORT
 rd_kafka_resp_err_t rd_kafka_producevx (rd_kafka_t *rk, ...);
